@@ -25,7 +25,7 @@ KAFKA_DIR="kafka_$SCALA_BIN_VERSION-$KAFKA_VERSION"
 FLINK_DIR="flink-$FLINK_VERSION"
 SPARK_DIR="spark-$SPARK_VERSION-bin-hadoop2.6"
 
-ZK_HOST="localhost"
+ZK_HOST="instance-manager"
 ZK_PORT="2181"
 ZK_CONNECTIONS="$ZK_HOST:$ZK_PORT"
 TOPIC=${TOPIC:-"ad-events"}
@@ -105,7 +105,7 @@ run() {
     $GIT clean -fd
 
     echo 'kafka.brokers:' > $CONF_FILE
-    echo '    - "localhost"' >> $CONF_FILE
+    echo '    - "instance-kafka1"' >> $CONF_FILE
     echo 'kafka.port: 9092' >> $CONF_FILE
     echo 'kafka.topic: "'$TOPIC'"' >> $CONF_FILE
     echo 'kafka.partitions: '$PARTITIONS >> $CONF_FILE
@@ -117,7 +117,7 @@ run() {
     echo '    - "'$ZK_HOST'"' >> $CONF_FILE
     echo 'zookeeper.port: '$ZK_PORT >> $CONF_FILE
     echo >> $CONF_FILE
-    echo 'redis.host: "localhost"' >> $CONF_FILE
+    echo 'redis.host: "instance-kvs"' >> $CONF_FILE
     echo >> $CONF_FILE
     echo 'process.hosts: 1' >> $CONF_FILE
     echo 'process.cores: 4' >> $CONF_FILE
@@ -138,7 +138,7 @@ run() {
     echo 'redis.threads: 20' >> $CONF_FILE
     echo >> $CONF_FILE
     echo '#EventGenerator' >> $CONF_FILE
-    echo 'use.local.event.generator: 1' >> $CONF_FILE
+    echo 'use.local.event.generator: 0' >> $CONF_FILE
     echo 'redis.flush: 1' >> $CONF_FILE
     echo 'redis.db: 0' >> $CONF_FILE
     echo 'load.target.hz: 10000000' >> $CONF_FILE
