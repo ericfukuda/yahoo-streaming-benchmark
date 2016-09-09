@@ -25,14 +25,14 @@ KAFKA_DIR="kafka_$SCALA_BIN_VERSION-$KAFKA_VERSION"
 FLINK_DIR="flink-$FLINK_VERSION"
 SPARK_DIR="spark-$SPARK_VERSION-bin-hadoop2.6"
 
-ZK_HOST="instance-manager"
+ZK_HOST="localhost"
 ZK_PORT="2181"
 ZK_CONNECTIONS="$ZK_HOST:$ZK_PORT"
 TOPIC=${TOPIC:-"ad-events"}
-PARTITIONS=${PARTITIONS:-1}
+PARTITIONS=${PARTITIONS:-2}
 LOAD=${LOAD:-1000}
 CONF_FILE=./conf/localConf.yaml
-TEST_TIME=${TEST_TIME:-240}
+TEST_TIME=${TEST_TIME:-180}
 
 pid_match() {
    local VAL=`ps -aef | grep "$1" | grep -v grep | awk '{print $2}'`
@@ -105,7 +105,7 @@ run() {
     $GIT clean -fd
 
     echo 'kafka.brokers:' > $CONF_FILE
-    echo '    - "instance-kafka1"' >> $CONF_FILE
+    echo '    - "kafka1"' >> $CONF_FILE
     echo 'kafka.port: 9092' >> $CONF_FILE
     echo 'kafka.topic: "'$TOPIC'"' >> $CONF_FILE
     echo 'kafka.partitions: '$PARTITIONS >> $CONF_FILE
@@ -117,7 +117,7 @@ run() {
     echo '    - "'$ZK_HOST'"' >> $CONF_FILE
     echo 'zookeeper.port: '$ZK_PORT >> $CONF_FILE
     echo >> $CONF_FILE
-    echo 'redis.host: "instance-kvs"' >> $CONF_FILE
+    echo 'redis.host: "redis"' >> $CONF_FILE
     echo >> $CONF_FILE
     echo 'process.hosts: 1' >> $CONF_FILE
     echo 'process.cores: 4' >> $CONF_FILE
@@ -253,8 +253,10 @@ run() {
     stop_if_needed spark.benchmark.KafkaRedisAdvertisingStream "Spark Client Process"
   elif [ "START_FLINK_PROCESSING" = "$OPERATION" ];
   then
-    "$FLINK_DIR/bin/flink" run ./flink-benchmarks/target/flink-benchmarks-0.1.0.jar $CONF_FILE &
-    sleep 3
+    #"$FLINK_DIR/bin/flink" run ./flink-benchmarks/target/flink-benchmarks-0.1.0.jar $CONF_FILE &
+    "$FLINK_DIR/bin/flink" run -c flink.benchmark.state.AdvertisingTopologyFlinkStateHighKeyCard ./flink-benchmarks/target/flink-benchmarks-0.1.0.jar $CONF_FILE &
+    #sleep 3
+    #sleep $TEST_TIME
   elif [ "STOP_FLINK_PROCESSING" = "$OPERATION" ];
   then
     FLINK_ID=`"$FLINK_DIR/bin/flink" list | grep 'Flink Streaming Job' | awk '{print $4}'; true`
@@ -272,9 +274,9 @@ run() {
     run "START_KAFKA"
     run "START_STORM"
     run "START_STORM_TOPOLOGY"
-    run "START_LOAD"
+    #run "START_LOAD"
     sleep $TEST_TIME
-    run "STOP_LOAD"
+    #run "STOP_LOAD"
     run "STOP_STORM_TOPOLOGY"
     run "STOP_STORM"
     run "STOP_KAFKA"
@@ -283,17 +285,17 @@ run() {
   elif [ "FLINK_TEST" = "$OPERATION" ];
   then
     run "START_ZK"
-    run "START_REDIS"
-    run "START_KAFKA"
+    #run "START_REDIS"
+    #run "START_KAFKA"
     run "START_FLINK"
     run "START_FLINK_PROCESSING"
-    run "START_LOAD"
+    #run "START_LOAD"
     sleep $TEST_TIME
-    run "STOP_LOAD"
+    #run "STOP_LOAD"
     run "STOP_FLINK_PROCESSING"
     run "STOP_FLINK"
-    run "STOP_KAFKA"
-    run "STOP_REDIS"
+    #run "STOP_KAFKA"
+    #run "STOP_REDIS"
     run "STOP_ZK"
   elif [ "SPARK_TEST" = "$OPERATION" ];
   then

@@ -2,7 +2,8 @@
 # Licensed under the terms of the Apache License 2.0. Please see LICENSE file in the project root for terms.
 
 kafka.brokers:
-    - "instance-kafka1"
+    - "kafka1"
+    - "kafka2"
 kafka.port: 9092
 kafka.topic: "ad-events"
 kafka.partitions: 20
@@ -11,10 +12,10 @@ kafka.zookeeper.path: /
 akka.zookeeper.path: /akkaQuery
 
 zookeeper.servers:
-    - "instance-manager"
+    - "manager"
 zookeeper.port: 2181
 
-redis.host: "instance-kvm"
+redis.host: "redis"
 
 process.hosts: 10
 process.cores: 12
@@ -39,6 +40,6 @@ redis.threads: 20
 use.local.event.generator: 1
 redis.flush: 1
 redis.db: 0
-load.target.hz: 10000000
-num.campaigns: 1000000
+load.target.hz: 10000000000
+num.campaigns: 100
 

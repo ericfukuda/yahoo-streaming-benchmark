@@ -38,42 +38,42 @@ public class AdvertisingTopologyRedisDirect {
     env.getConfig().setGlobalJobParameters(config.getParameters());
     env.enableCheckpointing(5000);
 
-    DataStream<String> messageStream = sourceStream(config, env);
+    DataStream<Tuple7<String, String, String, String, String, String, String>> messageStream = sourceStream(config, env);
 
-    messageStream.flatMap(new ThroughputLogger<String>(240, 1_000_000));
+    messageStream.flatMap(new ThroughputLogger<Tuple7<String, String, String, String, String, String, String>>(240, 1_000_000));
 
-    messageStream
-      .rebalance()
-      // Parse the String as JSON
-      .flatMap(new DeserializeBolt())
+    //messageStream
+    //  .rebalance()
+    //  // Parse the String as JSON
+    //  .flatMap(new DeserializeBolt())
 
-      //Filter the records if event type is "view"
-      .filter(new EventFilterBolt())
+    //  //Filter the records if event type is "view"
+    //  .filter(new EventFilterBolt())
 
-      // project the event
-      .<Tuple2<String, String>>project(2, 5)
+    //  // project the event
+    //  .<Tuple2<String, String>>project(2, 5)
 
-      // process campaign
-      .keyBy(0)
-      .flatMap(new CampaignProcessor(config.windowSize, config.redisHost, config.numRedisThreads));
+    //  // process campaign
+    //  .keyBy(0)
+    //  .flatMap(new CampaignProcessor(config.windowSize, config.redisHost, config.numRedisThreads));
 
-    env.execute();
+    //env.execute();
   }
 
   /**
    * Choose either Kafka or data generator as source
    */
-  private static DataStream<String> sourceStream(BenchmarkConfig config, StreamExecutionEnvironment env) {
-    RichParallelSourceFunction<String> source;
+  private static DataStream<Tuple7<String, String, String, String, String, String, String>> sourceStream(BenchmarkConfig config, StreamExecutionEnvironment env) {
+    RichParallelSourceFunction<Tuple7<String, String, String, String, String, String, String>> source;
     String sourceName;
-    if (config.useLocalEventGenerator) {
+    //if (config.useLocalEventGenerator) {
       HighKeyCardinalityGeneratorSource eventGenerator = new HighKeyCardinalityGeneratorSource(config);
       source = eventGenerator;
       sourceName = "EventGenerator";
-    } else {
-      source = new FlinkKafkaConsumer082<>(config.kafkaTopic, new SimpleStringSchema(), config.getParameters().getProperties());
-      sourceName = "Kafka";
-    }
+    //} else {
+    //  source = new FlinkKafkaConsumer082<>(config.kafkaTopic, new SimpleStringSchema(), config.getParameters().getProperties());
+    //  sourceName = "Kafka";
+    //}
 
     return env.addSource(source, sourceName);
   }

@@ -52,20 +52,21 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
     StreamExecutionEnvironment env = setupFlinkEnvironment(config);
     final TypeInformation<Tuple3<String, Long, Long>> queryWindowResultType = TypeInfoParser.parse("Tuple3<String, Long, Long>");
 
-    DataStream<String> rawMessageStream = streamSource(config, env);
+    //DataStream<String> rawMessageStream = streamSource(config, env);
+    DataStream<Tuple7<String, String, String, String, String, String, String>> rawMessageStream = streamSource(config, env);
 
     // log performance
-    rawMessageStream.flatMap(new ThroughputLogger<String>(240, 1_000_000));
+    rawMessageStream.flatMap(new ThroughputLogger<Tuple7<String, String, String, String, String, String, String>>(240, 1_000_000));
 
     DataStream<UUID> campaignHits = rawMessageStream
-      .flatMap(new Deserializer())
+      //.flatMap(new Deserializer())
       .filter(new EventFilter())
       .assignTimestampsAndWatermarks(new AdTimestampExtractor()) // assign event time stamp and generate watermark
       .map(new Projector());
 
     // campaign_id, event time
     campaignHits
-      .keyBy(identity())
+      .keyBy(identity());
       .transform("Query Window",
         queryWindowResultType,
         new QueryableWindowOperatorEvicting(config.windowSize, registrationService, true));
@@ -109,17 +110,17 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
   /**
    * Choose data source, either Kafka or data generator
    */
-  private static DataStream<String> streamSource(BenchmarkConfig config, StreamExecutionEnvironment env) {
-    RichParallelSourceFunction<String> source;
+  private static DataStream<Tuple7<String, String, String, String, String, String, String>> streamSource(BenchmarkConfig config, StreamExecutionEnvironment env) {
+    RichParallelSourceFunction<Tuple7<String, String, String, String, String, String, String>> source;
     String sourceName;
-    if (config.useLocalEventGenerator) {
+    //if (config.useLocalEventGenerator) {
       HighKeyCardinalityGeneratorSource eventGenerator = new HighKeyCardinalityGeneratorSource(config);
       source = eventGenerator;
       sourceName = "EventGenerator";
-    } else {
-      source = kafkaSource(config);
-      sourceName = "Kafka";
-    }
+    //} else {
+      //source = kafkaSource(config);
+      //sourceName = "Kafka";
+    //}
 
     return env.addSource(source, sourceName);
   }
@@ -127,12 +128,12 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
   /**
    * Setup kafka source
    */
-  private static FlinkKafkaConsumer08<String> kafkaSource(BenchmarkConfig config) {
-    return new FlinkKafkaConsumer08<>(
-      config.kafkaTopic,
-      new SimpleStringSchema(),
-      config.getParameters().getProperties());
-  }
+  //private static FlinkKafkaConsumer08<String> kafkaSource(BenchmarkConfig config) {
+  //  return new FlinkKafkaConsumer08<>(
+  //    config.kafkaTopic,
+  //    new SimpleStringSchema(),
+  //    config.getParameters().getProperties());
+  //}
 
   // --------------------------------------------------------------------------
   //   user functions
@@ -141,33 +142,33 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
   /**
    * Parse JSON
    */
-  public static class Deserializer extends
-    RichFlatMapFunction<String, Tuple7<String, String, String, String, String, String, String>> {
+  //public static class Deserializer extends
+  //  RichFlatMapFunction<String, Tuple7<String, String, String, String, String, String, String>> {
 
-    private transient JSONParser parser = null;
+  //  private transient JSONParser parser = null;
 
-    @Override
-    public void open(Configuration parameters) throws Exception {
-      parser = new JSONParser();
-    }
+  //  @Override
+  //  public void open(Configuration parameters) throws Exception {
+  //    parser = new JSONParser();
+  //  }
 
-    @Override
-    public void flatMap(String input, Collector<Tuple7<String, String, String, String, String, String, String>> out)
-      throws Exception {
-      JSONObject obj = (JSONObject) parser.parse(input);
+  //  @Override
+  //  public void flatMap(String input, Collector<Tuple7<String, String, String, String, String, String, String>> out)
+  //    throws Exception {
+  //    JSONObject obj = (JSONObject) parser.parse(input);
 
-      Tuple7<String, String, String, String, String, String, String> tuple =
-        new Tuple7<>(
-          obj.getAsString("user_id"),
-          obj.getAsString("page_id"),
-          obj.getAsString("campaign_id"),
-          obj.getAsString("ad_type"),
-          obj.getAsString("event_type"),
-          obj.getAsString("event_time"),
-          obj.getAsString("ip_address"));
-      out.collect(tuple);
-    }
-  }
+  //    Tuple7<String, String, String, String, String, String, String> tuple =
+  //      new Tuple7<>(
+  //        obj.getAsString("user_id"),
+  //        obj.getAsString("page_id"),
+  //        obj.getAsString("campaign_id"),
+  //        obj.getAsString("ad_type"),
+  //        obj.getAsString("event_type"),
+  //        obj.getAsString("event_time"),
+  //        obj.getAsString("ip_address"));
+  //    out.collect(tuple);
+  //  }
+  //}
 
   /**
    * Filter out everything except "view" events
@@ -176,6 +177,7 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
     FilterFunction<Tuple7<String, String, String, String, String, String, String>> {
     @Override
     public boolean filter(Tuple7<String, String, String, String, String, String, String> tuple) {
+      //System.out.println(tuple.f0 + " " + tuple.f1 + " " + tuple.f2 + " " + tuple.f3 + " " + tuple.f4 + " " + tuple.f5 + " " + tuple.f6);
       return tuple.f4.equals("view");
     }
   }
@@ -187,6 +189,7 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
 
     @Override
     public UUID map(Tuple7<String, String, String, String, String, String, String> tuple) {
+      //System.out.println(tuple.f0 + " " + tuple.f1 + " " + tuple.f2 + " " + tuple.f3 + " " + tuple.f4 + " " + tuple.f5 + " " + tuple.f6);
       return UUID.fromString(tuple.f2);
     }
   }

@@ -6,7 +6,8 @@ package flink.benchmark.state;
 
 import benchmark.common.advertising.RedisAdCampaignCache;
 import flink.benchmark.BenchmarkConfig;
-import flink.benchmark.generator.EventGeneratorSource;
+//import flink.benchmark.generator.EventGeneratorSource;
+import flink.benchmark.generator.HighKeyCardinalityGeneratorSource;
 import flink.benchmark.generator.RedisHelper;
 import flink.benchmark.utils.ThroughputLogger;
 import net.minidev.json.JSONObject;
@@ -16,6 +17,7 @@ import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.api.java.typeutils.TypeInfoParser;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.TimeCharacteristic;
@@ -54,36 +56,37 @@ public class AdvertisingTopologyFlinkState {
     RegistrationService registrationService = new ZooKeeperRegistrationService(zooKeeperConfiguration);
     TypeInformation<Tuple3<String, Long, Long>> queryWindowResultType = TypeInfoParser.parse("Tuple3<String, Long, Long>");
 
-    DataStream<String> rawMessageStream = sourceStream(config, env);
+    DataStream<Tuple7<String, String, String, String, String, String, String>> rawMessageStream = sourceStream(config, env);
 
     // log performance
-    rawMessageStream.flatMap(new ThroughputLogger<String>(240, 1_000_000));
+    //rawMessageStream.flatMap(new ThroughputLogger<String>(240, 1_000_000));
 
     // campaign_id, window end time
-    DataStream<Tuple3<String, Long, Long>> result = rawMessageStream
-      .flatMap(new DeserializeBolt())
-      .flatMap(new RedisJoinBolt(config))
-      .keyBy(0) // campaign_id
-      .transform("Query Window", queryWindowResultType, new QueryableWindowOperator(config.windowSize, registrationService));
+    //DataStream<Tuple3<String, Long, Long>> result = rawMessageStream
+    //  .flatMap(new DeserializeBolt())
+    //  .flatMap(new RedisJoinBolt(config))
+    //  .keyBy(0) // campaign_id
+    //  .transform("Query Window", queryWindowResultType, new QueryableWindowOperator(config.windowSize, registrationService));
 
-    env.execute();
+    //env.execute();
   }
 
   /**
    * Choose source - either Kafka or data generator
    */
-  private static DataStream<String> sourceStream(BenchmarkConfig config, StreamExecutionEnvironment env) {
-    RichParallelSourceFunction<String> source;
+  private static DataStream<Tuple7<String, String, String, String, String, String, String>> sourceStream(BenchmarkConfig config, StreamExecutionEnvironment env) {
+    RichParallelSourceFunction<Tuple7<String, String, String, String, String, String, String>> source;
     String sourceName;
-    if (config.useLocalEventGenerator) {
-      EventGeneratorSource eventGenerator = new EventGeneratorSource(config);
+    //if (config.useLocalEventGenerator) {
+      //EventGeneratorSource eventGenerator = new EventGeneratorSource(config);
+      HighKeyCardinalityGeneratorSource eventGenerator = new HighKeyCardinalityGeneratorSource(config);
       source = eventGenerator;
       sourceName = "EventGenerator";
-      prepareRedis(config, eventGenerator);
-    } else {
-      source = kafkaSource(config);
-      sourceName = "Kafka";
-    }
+      //prepareRedis(config, eventGenerator);
+    //} else {
+    //  source = kafkaSource(config);
+    //  sourceName = "Kafka";
+    //}
 
     return env.addSource(source, sourceName);
   }
@@ -91,11 +94,11 @@ public class AdvertisingTopologyFlinkState {
   /**
    * Prepare Redis for test
    */
-  private static void prepareRedis(BenchmarkConfig benchmarkConfig, EventGeneratorSource eventGenerator) {
-    RedisHelper redisHelper = new RedisHelper(benchmarkConfig);
-    redisHelper.prepareRedis(eventGenerator.getCampaigns());
-    redisHelper.writeCampaignFile(eventGenerator.getCampaigns());
-  }
+  //private static void prepareRedis(BenchmarkConfig benchmarkConfig, EventGeneratorSource eventGenerator) {
+  //  RedisHelper redisHelper = new RedisHelper(benchmarkConfig);
+  //  redisHelper.prepareRedis(eventGenerator.getCampaigns());
+  //  redisHelper.writeCampaignFile(eventGenerator.getCampaigns());
+  //}
 
   /**
    * Create a Kafka source
