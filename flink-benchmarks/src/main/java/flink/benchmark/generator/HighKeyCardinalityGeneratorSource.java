@@ -4,12 +4,12 @@ import flink.benchmark.BenchmarkConfig;
 
 import java.util.Random;
 import java.util.UUID;
-import org.apache.flink.api.java.tuple.Tuple7;
+import com.ericfukuda.flink.IdsProtos.Ids;
 
 /**
  * A data generator for generating large numbers of campaigns
  */
-public class HighKeyCardinalityGeneratorSource extends LoadGeneratorSource<Tuple7<String, String, String, String, String, String, String>> {
+public class HighKeyCardinalityGeneratorSource extends LoadGeneratorSource<Ids> {
 
   private static final String[] eventTypes = {"view", "click", "purchase"};
 
@@ -34,7 +34,7 @@ public class HighKeyCardinalityGeneratorSource extends LoadGeneratorSource<Tuple
   }
 
   @Override
-  public Tuple7<String, String, String, String, String, String, String> generateElement() {
+  public Ids generateElement() {
     if (eventsIdx == eventTypes.length) {
       eventsIdx = 0;
     }
@@ -44,7 +44,16 @@ public class HighKeyCardinalityGeneratorSource extends LoadGeneratorSource<Tuple
     cntCampaigns = (cntCampaigns == numCampaigns - 1) ? 0 : cntCampaigns + 1;
     UUID campaign = new UUID(campaignMsb, lsb);
 
-    Tuple7<String, String, String, String, String, String, String> tuple = new Tuple7<String, String, String, String, String, String, String>(user_id, page_id, campaign.toString(), "banner78", eventTypes[eventsIdx++], String.valueOf(System.currentTimeMillis()), "1.2.3.4");
+    Ids.Builder tuple = Ids.newBuilder();
+    return tuple.setUserId(user_id)
+                .setPageId(page_id)
+                .setCampaignId(campaign.toString())
+                .setAdType("banner78")
+                .setEventType(eventTypes[eventsIdx++])
+                .setEventTime(String.valueOf(System.currentTimeMillis()))
+                .setIpAddress("1.2.3.4")
+                .build();
+    //tuple = new Tuple7<String, String, String, String, String, String, String>(user_id, page_id, campaign.toString(), "banner78", eventTypes[eventsIdx++], String.valueOf(System.currentTimeMillis()), "1.2.3.4");
 
     //elementBase.setLength(resetSize);
     //elementBase.append(campaign.toString());
@@ -56,7 +65,7 @@ public class HighKeyCardinalityGeneratorSource extends LoadGeneratorSource<Tuple
     //System.out.println(eventsIdx);
 
     //return elementBase.toString();
-    return tuple;
+    //return (Ids)tuple;
   }
 
   //private StringBuilder elementBase() {

@@ -22,6 +22,7 @@ import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.ericfukuda.flink.IdsProtos.Ids;
 
 /**
  * To Run:  flink run -c flink.benchmark.AdvertisingTopologyRedisDirect target/flink-benchmarks-0.1.0.jar "../conf/benchmarkConf.yaml"
@@ -38,9 +39,9 @@ public class AdvertisingTopologyRedisDirect {
     env.getConfig().setGlobalJobParameters(config.getParameters());
     env.enableCheckpointing(5000);
 
-    DataStream<Tuple7<String, String, String, String, String, String, String>> messageStream = sourceStream(config, env);
+    DataStream<Ids> messageStream = sourceStream(config, env);
 
-    messageStream.flatMap(new ThroughputLogger<Tuple7<String, String, String, String, String, String, String>>(240, 1_000_000));
+    messageStream.flatMap(new ThroughputLogger<Ids>(240, 1_000_000));
 
     //messageStream
     //  .rebalance()
@@ -63,8 +64,8 @@ public class AdvertisingTopologyRedisDirect {
   /**
    * Choose either Kafka or data generator as source
    */
-  private static DataStream<Tuple7<String, String, String, String, String, String, String>> sourceStream(BenchmarkConfig config, StreamExecutionEnvironment env) {
-    RichParallelSourceFunction<Tuple7<String, String, String, String, String, String, String>> source;
+  private static DataStream<Ids> sourceStream(BenchmarkConfig config, StreamExecutionEnvironment env) {
+    RichParallelSourceFunction<Ids> source;
     String sourceName;
     //if (config.useLocalEventGenerator) {
       HighKeyCardinalityGeneratorSource eventGenerator = new HighKeyCardinalityGeneratorSource(config);

@@ -29,6 +29,7 @@ import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.ericfukuda.flink.IdsProtos.Ids;
 
 /**
  * To Run:  flink run -c flink.benchmark.state.AdvertisingTopologyFlinkState target/flink-benchmarks-0.1.0.jar "../conf/benchmarkConf.yaml"
@@ -56,7 +57,7 @@ public class AdvertisingTopologyFlinkState {
     RegistrationService registrationService = new ZooKeeperRegistrationService(zooKeeperConfiguration);
     TypeInformation<Tuple3<String, Long, Long>> queryWindowResultType = TypeInfoParser.parse("Tuple3<String, Long, Long>");
 
-    DataStream<Tuple7<String, String, String, String, String, String, String>> rawMessageStream = sourceStream(config, env);
+    DataStream<Ids> rawMessageStream = sourceStream(config, env);
 
     // log performance
     //rawMessageStream.flatMap(new ThroughputLogger<String>(240, 1_000_000));
@@ -74,8 +75,8 @@ public class AdvertisingTopologyFlinkState {
   /**
    * Choose source - either Kafka or data generator
    */
-  private static DataStream<Tuple7<String, String, String, String, String, String, String>> sourceStream(BenchmarkConfig config, StreamExecutionEnvironment env) {
-    RichParallelSourceFunction<Tuple7<String, String, String, String, String, String, String>> source;
+  private static DataStream<Ids> sourceStream(BenchmarkConfig config, StreamExecutionEnvironment env) {
+    RichParallelSourceFunction<Ids> source;
     String sourceName;
     //if (config.useLocalEventGenerator) {
       //EventGeneratorSource eventGenerator = new EventGeneratorSource(config);

@@ -27,6 +27,7 @@ import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunctio
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer08;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
+import com.ericfukuda.flink.IdsProtos.Ids;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -53,20 +54,22 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
     final TypeInformation<Tuple3<String, Long, Long>> queryWindowResultType = TypeInfoParser.parse("Tuple3<String, Long, Long>");
 
     //DataStream<String> rawMessageStream = streamSource(config, env);
-    DataStream<Tuple7<String, String, String, String, String, String, String>> rawMessageStream = streamSource(config, env);
+    //DataStream<Tuple7<String, String, String, String, String, String, String>> rawMessageStream = streamSource(config, env);
+    DataStream<Ids> rawMessageStream = streamSource(config, env);
+    Ids.Builder ids = Ids.newBuilder();
 
     // log performance
-    rawMessageStream.flatMap(new ThroughputLogger<Tuple7<String, String, String, String, String, String, String>>(240, 1_000_000));
+    rawMessageStream.flatMap(new ThroughputLogger<Ids>(240, 1_000_000));
 
     DataStream<UUID> campaignHits = rawMessageStream
-      //.flatMap(new Deserializer())
+      .flatMap(new Deserializer())
       .filter(new EventFilter())
       .assignTimestampsAndWatermarks(new AdTimestampExtractor()) // assign event time stamp and generate watermark
       .map(new Projector());
 
     // campaign_id, event time
     campaignHits
-      .keyBy(identity());
+      .keyBy(identity())
       .transform("Query Window",
         queryWindowResultType,
         new QueryableWindowOperatorEvicting(config.windowSize, registrationService, true));
@@ -110,8 +113,8 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
   /**
    * Choose data source, either Kafka or data generator
    */
-  private static DataStream<Tuple7<String, String, String, String, String, String, String>> streamSource(BenchmarkConfig config, StreamExecutionEnvironment env) {
-    RichParallelSourceFunction<Tuple7<String, String, String, String, String, String, String>> source;
+  private static DataStream<Ids> streamSource(BenchmarkConfig config, StreamExecutionEnvironment env) {
+    RichParallelSourceFunction<Ids> source;
     String sourceName;
     //if (config.useLocalEventGenerator) {
       HighKeyCardinalityGeneratorSource eventGenerator = new HighKeyCardinalityGeneratorSource(config);
@@ -142,33 +145,40 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
   /**
    * Parse JSON
    */
-  //public static class Deserializer extends
-  //  RichFlatMapFunction<String, Tuple7<String, String, String, String, String, String, String>> {
+  public static class Deserializer extends
+    RichFlatMapFunction<Ids, Tuple7<String, String, String, String, String, String, String>> {
 
-  //  private transient JSONParser parser = null;
+    private transient JSONParser parser = null;
 
-  //  @Override
-  //  public void open(Configuration parameters) throws Exception {
-  //    parser = new JSONParser();
-  //  }
+    @Override
+    public void open(Configuration parameters) throws Exception {
+      parser = new JSONParser();
+    }
 
-  //  @Override
-  //  public void flatMap(String input, Collector<Tuple7<String, String, String, String, String, String, String>> out)
-  //    throws Exception {
-  //    JSONObject obj = (JSONObject) parser.parse(input);
+    @Override
+    public void flatMap(Ids input, Collector<Tuple7<String, String, String, String, String, String, String>> out)
+      throws Exception {
+      //JSONObject obj = (JSONObject) parser.parse(input);
 
-  //    Tuple7<String, String, String, String, String, String, String> tuple =
-  //      new Tuple7<>(
-  //        obj.getAsString("user_id"),
-  //        obj.getAsString("page_id"),
-  //        obj.getAsString("campaign_id"),
-  //        obj.getAsString("ad_type"),
-  //        obj.getAsString("event_type"),
-  //        obj.getAsString("event_time"),
-  //        obj.getAsString("ip_address"));
-  //    out.collect(tuple);
-  //  }
-  //}
+      Tuple7<String, String, String, String, String, String, String> tuple =
+        new Tuple7<>(
+          //obj.getAsString("user_id"),
+          //obj.getAsString("page_id"),
+          //obj.getAsString("campaign_id"),
+          //obj.getAsString("ad_type"),
+          //obj.getAsString("event_type"),
+          //obj.getAsString("event_time"),
+          //obj.getAsString("ip_address"));
+          input.getUserId(),
+          input.getPageId(),
+          input.getCampaignId(),
+          input.getAdType(),
+          input.getEventType(),
+          input.getEventTime(),
+          input.getIpAddress());
+      out.collect(tuple);
+    }
+  }
 
   /**
    * Filter out everything except "view" events
