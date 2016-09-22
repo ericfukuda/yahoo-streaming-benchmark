@@ -16,7 +16,7 @@ REDIS_VERSION=${REDIS_VERSION:-"3.0.5"}
 SCALA_BIN_VERSION=${SCALA_BIN_VERSION:-"2.10"}
 SCALA_SUB_VERSION=${SCALA_SUB_VERSION:-"4"}
 STORM_VERSION=${STORM_VERSION:-"1.0.0"}
-FLINK_VERSION=${FLINK_VERSION:-"1.0.1"}
+FLINK_VERSION=${FLINK_VERSION:-"1.0.0"}
 SPARK_VERSION=${SPARK_VERSION:-"1.5.1"}
 
 STORM_DIR="apache-storm-$STORM_VERSION"
@@ -32,7 +32,7 @@ TOPIC=${TOPIC:-"ad-events"}
 PARTITIONS=${PARTITIONS:-2}
 LOAD=${LOAD:-1000}
 CONF_FILE=./conf/localConf.yaml
-TEST_TIME=${TEST_TIME:-240}
+TEST_TIME=${TEST_TIME:-30}
 
 pid_match() {
    local VAL=`ps -aef | grep "$1" | grep -v grep | awk '{print $2}'`
@@ -161,16 +161,15 @@ run() {
     #Fetch Storm
     STORM_FILE="$STORM_DIR.tar.gz"
     #fetch_untar_file "$STORM_FILE" "http://www.interior-dsgn.com/apache/storm/$STORM_DIR/$STORM_FILE"
-    fetch_untar_file "$STORM_FILE" "http://ftp.jaist.ac.jp/pub/apache/storm/$STORM_DIR/$STORM_FILE"
-
+    fetch_untar_file "$STORM_FILE" "http://mirror.csclub.uwaterloo.ca/apache/storm/$STORM_DIR/$STORM_FILE"
     #Fetch Flink
     FLINK_FILE="$FLINK_DIR-bin-hadoop27-scala_${SCALA_BIN_VERSION}.tgz"
-    fetch_untar_file "$FLINK_FILE" "http://mirror.nexcess.net/apache/flink/flink-$FLINK_VERSION/$FLINK_FILE"
+    fetch_untar_file "$FLINK_FILE" "http://archive.apache.org/dist/flink/flink-$FLINK_VERSION/$FLINK_FILE"
 
     #Fetch Spark
-    SPARK_FILE="$SPARK_DIR.tgz"
+    #SPARK_FILE="$SPARK_DIR.tgz"
     #fetch_untar_file "$SPARK_FILE" "http://mirror.nexcess.net/apache/spark/spark-$SPARK_VERSION/$SPARK_FILE"
-    fetch_untar_file "$SPARK_FILE" "http://archive.apache.org/dist/spark/spark-$SPARK_VERSION/$SPARK_FILE"
+    #fetch_untar_file "$SPARK_FILE" "http://archive.apache.org/dist/spark/spark-$SPARK_VERSION/$SPARK_FILE"
 
   elif [ "START_ZK" = "$OPERATION" ];
   then
