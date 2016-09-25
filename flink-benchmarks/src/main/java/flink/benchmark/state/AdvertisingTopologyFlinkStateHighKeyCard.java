@@ -54,25 +54,33 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
     final TypeInformation<Tuple3<String, Long, Long>> queryWindowResultType = TypeInfoParser.parse("Tuple3<String, Long, Long>");
 
     //DataStream<String> rawMessageStream = streamSource(config, env);
-    //DataStream<Tuple7<String, String, String, String, String, String, String>> rawMessageStream = streamSource(config, env);
-    DataStream<Ids> rawMessageStream = streamSource(config, env);
-    Ids.Builder ids = Ids.newBuilder();
+    DataStream<Tuple7<String, String, String, String, String, String, String>> rawMessageStream = streamSource(config, env);
 
     // log performance
-    rawMessageStream.flatMap(new ThroughputLogger<Ids>(240, 1_000_000));
+    rawMessageStream.flatMap(new ThroughputLogger<Tuple7<String, String, String, String, String, String, String>>(240, 1_000_000));
 
-    DataStream<UUID> campaignHits = rawMessageStream
-      .flatMap(new Deserializer())
-      .filter(new EventFilter())
-      .assignTimestampsAndWatermarks(new AdTimestampExtractor()) // assign event time stamp and generate watermark
-      .map(new Projector());
+    //DataStream<UUID> campaignHits = rawMessageStream
+    //DataStream<Tuple7<String, String, String, String, String, String, String>> campaignHits = rawMessageStream
+    //  .map(new MapFunction<String, Tuple7<String, String, String, String, String, String, String>>() {
+    //      @Override
+    //      public Tuple7<String, String, String, String, String, String, String> map(String event) {
+    //        String truncatedEvent = event.substring(1, event.length() - 2);
+    //        String[] fields = truncatedEvent.split(",", 0);
+    //        Tuple7<String, String, String, String, String, String, String> eventTpl = new Tuple7(fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6]);
+    //        return eventTpl;
+    //      }
+    //  })
+      //.flatMap(new Deserializer())
+      //.filter(new EventFilter());
+      //.assignTimestampsAndWatermarks(new AdTimestampExtractor()) // assign event time stamp and generate watermark
+      //.map(new Projector());
 
     // campaign_id, event time
-    campaignHits
-      .keyBy(identity())
-      .transform("Query Window",
-        queryWindowResultType,
-        new QueryableWindowOperatorEvicting(config.windowSize, registrationService, true));
+    //campaignHits
+    //  .keyBy(identity());
+      //.transform("Query Window",
+      //  queryWindowResultType,
+      //  new QueryableWindowOperatorEvicting(config.windowSize, registrationService, true));
 
     env.execute();
   }
@@ -113,8 +121,10 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
   /**
    * Choose data source, either Kafka or data generator
    */
-  private static DataStream<Ids> streamSource(BenchmarkConfig config, StreamExecutionEnvironment env) {
-    RichParallelSourceFunction<Ids> source;
+  //private static DataStream<String> streamSource(BenchmarkConfig config, StreamExecutionEnvironment env) {
+  private static DataStream<Tuple7<String, String, String, String, String, String, String>> streamSource(BenchmarkConfig config, StreamExecutionEnvironment env) {
+    //RichParallelSourceFunction<String> source;
+    RichParallelSourceFunction<Tuple7<String, String, String, String, String, String, String>> source;
     String sourceName;
     //if (config.useLocalEventGenerator) {
       HighKeyCardinalityGeneratorSource eventGenerator = new HighKeyCardinalityGeneratorSource(config);

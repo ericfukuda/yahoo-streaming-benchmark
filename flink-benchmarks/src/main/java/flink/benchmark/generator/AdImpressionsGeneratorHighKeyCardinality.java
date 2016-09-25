@@ -10,7 +10,7 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer08;
 import org.apache.flink.streaming.connectors.kafka.partitioner.FixedPartitioner;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.tuple.Tuple7;
-import com.ericfukuda.flink.IdsProtos.Ids;
+//import com.ericfukuda.flink.IdsProtos.Ids;
 
 /**
  * Distributed Data Generator for AdImpression Events.  Designed to generate
@@ -23,11 +23,20 @@ public class AdImpressionsGeneratorHighKeyCardinality {
 		
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		
-		SourceFunction<Ids> source = new HighKeyCardinalityGeneratorSource(benchmarkConfig);
-		DataStream<Ids> adImpressions = env.addSource(source);
+		SourceFunction<Tuple7<String, String, String, String, String, String, String>> source = new HighKeyCardinalityGeneratorSource(benchmarkConfig);
+		//SourceFunction<String> source = new HighKeyCardinalityGeneratorSource(benchmarkConfig);
+		DataStream<Tuple7<String, String, String, String, String, String, String>> adImpressions = env.addSource(source);
+		//DataStream<String> adImpressions = env.addSource(source);
 
-		adImpressions.flatMap(new ThroughputLogger<Ids>(240, 1_000_000));
+		adImpressions.flatMap(new ThroughputLogger<Tuple7<String, String, String, String, String, String, String>>(240, 1_000_000));
+		//adImpressions.flatMap(new ThroughputLogger<String>(240, 1_000_000));
 
+    //adImpressions.map(new MapFunction<Tuple7<String, String, String, String, String, String, String>, String>() {
+    //  @Override
+    //  public String map(Tuple7<String, String, String, String, String, String, String> event) throws Exception {
+    //    return event.toString();
+    //  }
+    //})
 		//adImpressions.addSink(new FlinkKafkaProducer08<>(
 		//		benchmarkConfig.kafkaTopic,
 		//		new SimpleStringSchema(), 
