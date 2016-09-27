@@ -29,7 +29,6 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer08;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
 import org.apache.flink.configuration.Configuration;
-import com.ericfukuda.flink.IdsProtos.Ids;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -177,40 +176,40 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
   /**
    * Parse JSON
    */
-  public static class Deserializer extends
-    RichFlatMapFunction<Ids, Tuple7<String, String, String, String, String, String, String>> {
+  //public static class Deserializer extends
+  //  RichFlatMapFunction<Ids, Tuple7<String, String, String, String, String, String, String>> {
 
-    private transient JSONParser parser = null;
+  //  private transient JSONParser parser = null;
 
-    @Override
-    public void open(Configuration parameters) throws Exception {
-      parser = new JSONParser();
-    }
+  //  @Override
+  //  public void open(Configuration parameters) throws Exception {
+  //    parser = new JSONParser();
+  //  }
 
-    @Override
-    public void flatMap(Ids input, Collector<Tuple7<String, String, String, String, String, String, String>> out)
-      throws Exception {
-      //JSONObject obj = (JSONObject) parser.parse(input);
+  //  @Override
+  //  public void flatMap(Ids input, Collector<Tuple7<String, String, String, String, String, String, String>> out)
+  //    throws Exception {
+  //    //JSONObject obj = (JSONObject) parser.parse(input);
 
-      Tuple7<String, String, String, String, String, String, String> tuple =
-        new Tuple7<>(
-          //obj.getAsString("user_id"),
-          //obj.getAsString("page_id"),
-          //obj.getAsString("campaign_id"),
-          //obj.getAsString("ad_type"),
-          //obj.getAsString("event_type"),
-          //obj.getAsString("event_time"),
-          //obj.getAsString("ip_address"));
-          input.getUserId(),
-          input.getPageId(),
-          input.getCampaignId(),
-          input.getAdType(),
-          input.getEventType(),
-          input.getEventTime(),
-          input.getIpAddress());
-      out.collect(tuple);
-    }
-  }
+  //    Tuple7<String, String, String, String, String, String, String> tuple =
+  //      new Tuple7<>(
+  //        //obj.getAsString("user_id"),
+  //        //obj.getAsString("page_id"),
+  //        //obj.getAsString("campaign_id"),
+  //        //obj.getAsString("ad_type"),
+  //        //obj.getAsString("event_type"),
+  //        //obj.getAsString("event_time"),
+  //        //obj.getAsString("ip_address"));
+  //        input.getUserId(),
+  //        input.getPageId(),
+  //        input.getCampaignId(),
+  //        input.getAdType(),
+  //        input.getEventType(),
+  //        input.getEventTime(),
+  //        input.getIpAddress());
+  //    out.collect(tuple);
+  //  }
+  //}
 
   /**
    * Filter out everything except "view" events

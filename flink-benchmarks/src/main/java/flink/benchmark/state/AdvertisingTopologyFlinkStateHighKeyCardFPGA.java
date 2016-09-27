@@ -28,7 +28,6 @@ import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer08;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
-import com.ericfukuda.flink.IdsProtos.Ids;
 
 import java.io.IOException;
 import java.io.BufferedReader;
