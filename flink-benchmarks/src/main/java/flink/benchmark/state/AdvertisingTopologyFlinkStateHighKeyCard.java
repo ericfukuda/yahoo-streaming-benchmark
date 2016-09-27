@@ -24,13 +24,18 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
+import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer08;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
+import org.apache.flink.configuration.Configuration;
 import com.ericfukuda.flink.IdsProtos.Ids;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 
 /**
  * To Run:  flink run -c flink.benchmark.state.AdvertisingTopologyFlinkStateHighKeyCard target/flink-benchmarks-0.1.0.jar "../conf/benchmarkConf.yaml"
@@ -46,12 +51,12 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
     BenchmarkConfig config = BenchmarkConfig.fromArgs(args);
 
     // queryable state registration
-    ZooKeeperConfiguration zooKeeperConfiguration = new ZooKeeperConfiguration(config.akkaZookeeperPath, config.akkaZookeeperQuorum);
-    RegistrationService registrationService = new ZooKeeperRegistrationService(zooKeeperConfiguration);
+    //ZooKeeperConfiguration zooKeeperConfiguration = new ZooKeeperConfiguration(config.akkaZookeeperPath, config.akkaZookeeperQuorum);
+    //RegistrationService registrationService = new ZooKeeperRegistrationService(zooKeeperConfiguration);
 
     // flink environment
     StreamExecutionEnvironment env = setupFlinkEnvironment(config);
-    final TypeInformation<Tuple3<String, Long, Long>> queryWindowResultType = TypeInfoParser.parse("Tuple3<String, Long, Long>");
+    //final TypeInformation<Tuple3<String, Long, Long>> queryWindowResultType = TypeInfoParser.parse("Tuple3<String, Long, Long>");
 
     //DataStream<String> rawMessageStream = streamSource(config, env);
     DataStream<Tuple7<String, String, String, String, String, String, String>> rawMessageStream = streamSource(config, env);
@@ -59,19 +64,36 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
     // log performance
     rawMessageStream.flatMap(new ThroughputLogger<Tuple7<String, String, String, String, String, String, String>>(240, 1_000_000));
 
-    //DataStream<UUID> campaignHits = rawMessageStream
-    //DataStream<Tuple7<String, String, String, String, String, String, String>> campaignHits = rawMessageStream
-    //  .map(new MapFunction<String, Tuple7<String, String, String, String, String, String, String>>() {
-    //      @Override
-    //      public Tuple7<String, String, String, String, String, String, String> map(String event) {
-    //        String truncatedEvent = event.substring(1, event.length() - 2);
-    //        String[] fields = truncatedEvent.split(",", 0);
-    //        Tuple7<String, String, String, String, String, String, String> eventTpl = new Tuple7(fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6]);
-    //        return eventTpl;
-    //      }
-    //  })
+    DataStream<Tuple7<String, String, String, String, String, String, String>> campaignHits = rawMessageStream
       //.flatMap(new Deserializer())
-      //.filter(new EventFilter());
+      .filter(new EventFilter());
+
+    campaignHits.addSink(new RichSinkFunction<Tuple7<String, String, String, String, String, String, String>>() {
+          InetAddress addr;
+          DatagramSocket sendSocket;
+
+          @Override
+          public void open(Configuration confiuration) throws Exception {
+            addr = InetAddress.getByName("127.0.0.1");
+            sendSocket = new DatagramSocket();
+          }
+
+          @Override
+          public void close() {
+            sendSocket.close();
+          }
+
+          @Override
+          public void invoke(Tuple7<String, String, String, String, String, String, String> tuple) throws Exception {
+            String uuid = tuple.f2;
+            byte[] buf = uuid.getBytes();
+
+            DatagramPacket packet = new DatagramPacket(buf, buf.length, addr, 5431);
+            sendSocket.send(packet);
+
+            return;
+          }
+        });
       //.assignTimestampsAndWatermarks(new AdTimestampExtractor()) // assign event time stamp and generate watermark
       //.map(new Projector());
 
@@ -82,7 +104,7 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
       //  queryWindowResultType,
       //  new QueryableWindowOperatorEvicting(config.windowSize, registrationService, true));
 
-    env.execute();
+    env.execute("UDP Sender");
   }
 
   /**

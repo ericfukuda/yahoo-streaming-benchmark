@@ -32,7 +32,7 @@ TOPIC=${TOPIC:-"ad-events"}
 PARTITIONS=${PARTITIONS:-2}
 LOAD=${LOAD:-1000}
 CONF_FILE=./conf/localConf.yaml
-TEST_TIME=${TEST_TIME:-30}
+TEST_TIME=${TEST_TIME:-60}
 
 pid_match() {
    local VAL=`ps -aef | grep "$1" | grep -v grep | awk '{print $2}'`
@@ -226,15 +226,24 @@ run() {
     sleep 3
   elif [ "START_LOAD" = "$OPERATION" ];
   then
-    cd data
-    start_if_needed leiningen.core.main "Load Generation" 1 $LEIN run -r -t $LOAD --configPath ../$CONF_FILE
-    cd ..
+    #cd data
+    #start_if_needed leiningen.core.main "Load Generation" 1 $LEIN run -r -t $LOAD --configPath ../$CONF_FILE
+    "$FLINK_DIR/bin/flink" run -c flink.benchmark.state.AdvertisingTopologyFlinkStateHighKeyCard ./flink-benchmarks/target/flink-benchmarks-0.1.0.jar $CONF_FILE &
+    #cd ..
   elif [ "STOP_LOAD" = "$OPERATION" ];
   then
-    stop_if_needed leiningen.core.main "Load Generation"
-    cd data
-    $LEIN run -g --configPath ../$CONF_FILE || true
-    cd ..
+    FLINK_ID=`"$FLINK_DIR/bin/flink" list | grep 'UDP Sender' | awk '{print $4}'; true`
+    if [ "$FLINK_ID" == "" ];
+	then
+	  echo "Could not find streaming job to kill"
+    else
+      "$FLINK_DIR/bin/flink" cancel $FLINK_ID
+      sleep 3
+    fi
+    #stop_if_needed leiningen.core.main "Load Generation"
+    #cd data
+    #$LEIN run -g --configPath ../$CONF_FILE || true
+    #cd ..
   elif [ "START_STORM_TOPOLOGY" = "$OPERATION" ];
   then
     "$STORM_DIR/bin/storm" jar ./storm-benchmarks/target/storm-benchmarks-0.1.0.jar storm.benchmark.AdvertisingTopology test-topo -conf $CONF_FILE
@@ -253,12 +262,13 @@ run() {
   elif [ "START_FLINK_PROCESSING" = "$OPERATION" ];
   then
     #"$FLINK_DIR/bin/flink" run ./flink-benchmarks/target/flink-benchmarks-0.1.0.jar $CONF_FILE &
-    "$FLINK_DIR/bin/flink" run -c flink.benchmark.state.AdvertisingTopologyFlinkStateHighKeyCard ./flink-benchmarks/target/flink-benchmarks-0.1.0.jar $CONF_FILE &
+    "$FLINK_DIR/bin/flink" run -c flink.benchmark.state.AdvertisingTopologyFlinkStateHighKeyCardFPGA ./flink-benchmarks/target/flink-benchmarks-0.1.0.jar $CONF_FILE &
     #sleep 3
     #sleep $TEST_TIME
   elif [ "STOP_FLINK_PROCESSING" = "$OPERATION" ];
   then
-    FLINK_ID=`"$FLINK_DIR/bin/flink" list | grep 'Flink Streaming Job' | awk '{print $4}'; true`
+    #FLINK_ID=`"$FLINK_DIR/bin/flink" list | grep 'Flink Streaming Job' | awk '{print $4}'; true`
+    FLINK_ID=`"$FLINK_DIR/bin/flink" list | grep 'UDP Receiver' | awk '{print $4}'; true`
     if [ "$FLINK_ID" == "" ];
 	then
 	  echo "Could not find streaming job to kill"
@@ -287,11 +297,11 @@ run() {
     #run "START_REDIS"
     #run "START_KAFKA"
     run "START_FLINK"
-    run "START_FLINK_PROCESSING"
-    #run "START_LOAD"
+    #run "START_FLINK_PROCESSING"
+    run "START_LOAD"
     sleep $TEST_TIME
-    #run "STOP_LOAD"
-    run "STOP_FLINK_PROCESSING"
+    run "STOP_LOAD"
+    #run "STOP_FLINK_PROCESSING"
     run "STOP_FLINK"
     #run "STOP_KAFKA"
     #run "STOP_REDIS"
