@@ -31,6 +31,7 @@ import org.apache.flink.util.Collector;
 import org.apache.flink.configuration.Configuration;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -70,11 +71,19 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
     campaignHits.addSink(new RichSinkFunction<Tuple7<String, String, String, String, String, String, String>>() {
           InetAddress addr;
           DatagramSocket sendSocket;
+          private int packetCounter;
+          private int MAX_PACKET_N;
+          private int UUID_LEN;
+          ByteBuffer buf;
 
           @Override
           public void open(Configuration confiuration) throws Exception {
+            MAX_PACKET_N = 8;
+            UUID_LEN = 36;
             addr = InetAddress.getByName("127.0.0.1");
             sendSocket = new DatagramSocket();
+            buf = ByteBuffer.allocate(MAX_PACKET_N * UUID_LEN);
+            packetCounter = 0;
           }
 
           @Override
@@ -85,10 +94,17 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
           @Override
           public void invoke(Tuple7<String, String, String, String, String, String, String> tuple) throws Exception {
             String uuid = tuple.f2;
-            byte[] buf = uuid.getBytes();
+            byte[] uuidBytes = uuid.getBytes();
+            buf.put(uuidBytes);
+            
+            if (packetCounter == MAX_PACKET_N - 1) {
+              DatagramPacket packet = new DatagramPacket(buf.array(), buf.array().length, addr, 5431);
+              sendSocket.send(packet);
+              packetCounter = 0;
+              buf.rewind();
+            }
 
-            DatagramPacket packet = new DatagramPacket(buf, buf.length, addr, 5431);
-            sendSocket.send(packet);
+            ++packetCounter;
 
             return;
           }
