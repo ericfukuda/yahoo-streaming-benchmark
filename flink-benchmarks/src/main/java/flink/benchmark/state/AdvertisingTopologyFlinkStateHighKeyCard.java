@@ -78,9 +78,9 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
 
           @Override
           public void open(Configuration confiuration) throws Exception {
-            MAX_PACKET_N = 8;
+            MAX_PACKET_N = 32;
             UUID_LEN = 36;
-            addr = InetAddress.getByName("127.0.0.1");
+            addr = InetAddress.getByName("10.142.0.8");
             sendSocket = new DatagramSocket();
             buf = ByteBuffer.allocate(MAX_PACKET_N * UUID_LEN);
             packetCounter = 0;
@@ -96,15 +96,15 @@ public class AdvertisingTopologyFlinkStateHighKeyCard {
             String uuid = tuple.f2;
             byte[] uuidBytes = uuid.getBytes();
             buf.put(uuidBytes);
+            ++packetCounter;
             
-            if (packetCounter == MAX_PACKET_N - 1) {
+            if (packetCounter == MAX_PACKET_N) {
               DatagramPacket packet = new DatagramPacket(buf.array(), buf.array().length, addr, 5431);
               sendSocket.send(packet);
               packetCounter = 0;
               buf.rewind();
             }
 
-            ++packetCounter;
 
             return;
           }
